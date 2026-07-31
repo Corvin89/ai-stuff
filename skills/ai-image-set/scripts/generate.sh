@@ -22,6 +22,8 @@
 #
 # Run it with run_in_background: true — with model=flux a single image
 # takes 15–60s, so any sizeable batch outlives a synchronous tool call.
+#
+# Exit status: 0 if every job produced a valid JPEG, 1 if any job failed.
 
 set -u
 
@@ -30,22 +32,46 @@ JOBS=${2:?jobs file required}
 TAIL=${3:-}
 
 MAX_RETRIES=4
-GAP=2 # пауза между запросами, чтобы не упереться в лимит очереди
+GAP=2 # pause between requests, to stay clear of the queue limit
 
 mkdir -p "$OUT"
 
-# JPEG начинается с FF D8. Проверяем сигнатуру, а не размер: ответ 429
-# приходит как непустой JSON и по проверке "файл не пуст" проходит.
+# A JPEG starts with FF D8. Check the signature, not the size: the 429
+# response arrives as non-empty JSON and passes any "file is not empty" test.
+# od rather than xxd — od is POSIX and always present, xxd ships with vim.
 is_jpeg() {
   [ -s "$1" ] || return 1
-  [ "$(head -c 2 "$1" | xxd -p 2>/dev/null)" = "ffd8" ]
+  [ "$(LC_ALL=C od -An -N2 -tx1 "$1" | tr -d ' \n')" = "ffd8" ]
+}
+
+# Percent-encode a string for use in the URL path. The prompt is user prose,
+# so it cannot be pasted in raw: `&` would append a query parameter of its own
+# and `#` would truncate the URL at the fragment marker. Encoding only spaces
+# and commas is not enough.
+urlencode() {
+  local LC_ALL=C
+  local string=$1 out='' char hex i
+  for ((i = 0; i < ${#string}; i++)); do
+    char=${string:i:1}
+    case $char in
+      [a-zA-Z0-9._~-]) out+=$char ;;
+      *)
+        printf -v hex '%%%02X' "'$char"
+        out+=$hex
+        ;;
+    esac
+  done
+  printf '%s' "$out"
 }
 
 ok=0
 skipped=0
 failed=0
 
-while IFS=$'\t' read -r name seed prompt; do
+# `|| [ -n "$name" ]` keeps the last job when the file has no trailing
+# newline: read returns non-zero there but has already filled the fields,
+# and without this the final image is skipped with no error at all.
+while IFS=$'\t' read -r name seed prompt || [ -n "${name:-}" ]; do
   [ -z "${name:-}" ] && continue
   case "$name" in \#*) continue ;; esac
 
@@ -60,7 +86,7 @@ while IFS=$'\t' read -r name seed prompt; do
 
   full="$prompt"
   [ -n "$TAIL" ] && full="$prompt, $TAIL"
-  encoded=$(printf '%s' "$full" | sed 's/ /%20/g; s/,/%2C/g')
+  encoded=$(urlencode "$full")
   url="https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1280&nologo=true&model=flux&seed=${seed}"
 
   attempt=1
@@ -76,14 +102,14 @@ while IFS=$'\t' read -r name seed prompt; do
     rm -f "$target"
 
     if [ "$attempt" -eq "$MAX_RETRIES" ]; then
-      echo "FAIL  $name  (http $code, попыток: $attempt)"
+      echo "FAIL  $name  (http $code, attempts: $attempt)"
       failed=$((failed + 1))
       break
     fi
 
-    # 429 = очередь занята. Отступаем всё дальше: 5, 10, 20, 40 секунд.
+    # 429 = the queue is busy. Back off further each time: 5, 10, 20, 40 seconds.
     backoff=$((5 * (1 << (attempt - 1))))
-    echo "retry $name  (http $code, ждём ${backoff}s)"
+    echo "retry $name  (http $code, waiting ${backoff}s)"
     sleep "$backoff"
     attempt=$((attempt + 1))
   done
@@ -91,8 +117,19 @@ while IFS=$'\t' read -r name seed prompt; do
   sleep "$GAP"
 done < "$JOBS"
 
+# Count with the same signature check used above. The previous one-liner
+# grepped for the literal text \xff\xd8 and so always reported zero.
+valid=0
+while IFS= read -r file; do
+  is_jpeg "$file" && valid=$((valid + 1))
+done < <(find "$OUT" -type f)
+
 echo "---"
 echo "generated: $ok   skipped: $skipped   failed: $failed"
-echo "валидных JPEG в $OUT: $(find "$OUT" -type f -exec sh -c 'head -c2 "$1" | grep -q $"\xff\xd8"' _ {} \; -print 2>/dev/null | wc -l | tr -d ' ')"
-[ "$failed" -gt 0 ] && echo "перезапусти скрипт — он догенерирует только недостающие"
+echo "valid JPEGs in $OUT: $valid"
+
+if [ "$failed" -gt 0 ]; then
+  echo "rerun the script — it will only regenerate what is missing"
+  exit 1
+fi
 exit 0
