@@ -1,0 +1,24 @@
+# macOS writes these into every directory you so much as open in Finder.
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# probe.mjs resolves playwright through NODE_PATH rather than depending on it,
+# but anyone debugging it is one `npm install playwright` away from dropping
+# ~300 MB in here.
+node_modules/
+package-lock.json
+
+# Skill output. Both skills take their output directory as an argument, so
+# nothing lands here by default — but a run started from the repo root will
+# leave screenshots and generated images behind.
+*.png
+*.jpg
+*.jpeg
+*.webp
