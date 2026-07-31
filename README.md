@@ -50,6 +50,8 @@ reads `.claude/image-style.md` in the current project — palette, categories, s
 prohibitions — and creates that file by asking questions if it is missing. So the mechanics
 are fixed once for every project, and style never leaks between them.
 
+Full documentation: [`skills/ai-image-set/README.md`](skills/ai-image-set/README.md).
+
 ### `web-audit`
 
 Audits a running site by **looking at it**: screenshots at several viewports, reviewed as

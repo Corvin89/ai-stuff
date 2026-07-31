@@ -88,3 +88,7 @@ does not report them again.
 - **No invented numbers.** Measured and attributed, or described in words.
 - **Every finding names a file, a viewport and a visible element**, or it is dropped.
 - **"No defects found" is a complete result.** The list is never padded.
+
+## Licence
+
+[MIT](../../LICENSE) — copyright (c) 2026 Alexander Kutiy.
