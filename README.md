@@ -1,63 +1,87 @@
 # ai-stuff
 
-Скиллы для Claude Code — переиспользуемые между проектами.
+Reusable skills for Claude Code.
 
-## Что такое скилл
+A skill is a folder with a `SKILL.md` inside. Claude Code picks it up and applies it when
+the task matches — no dependencies to install, no configuration, just instructions and,
+where useful, a helper script alongside.
 
-Папка с файлом `SKILL.md`, который Claude Code подхватывает автоматически и применяет,
-когда задача подходит под описание из его заголовка. Никакой установки зависимостей,
-никакой конфигурации — только текст инструкций и, при необходимости, вспомогательные
-скрипты рядом.
+## Install
 
-## Установка
+Skills live in `~/.claude/skills/`. Two ways to get them there.
 
-Скиллы живут в `~/.claude/skills/`. Есть два способа положить их туда.
-
-**Симлинк — если хочешь получать обновления через `git pull`:**
+**Symlink — to receive updates with `git pull`:**
 
 ```bash
 git clone git@github.com:Corvin89/ai-stuff.git ~/www/ai-stuff
-ln -s ~/www/ai-stuff/skills/ai-image-set ~/.claude/skills/ai-image-set
+ln -s ~/www/ai-stuff/skills/<skill> ~/.claude/skills/<skill>
 ```
 
-**Копия — если хочешь править под себя и не тянуть чужие изменения:**
+**Copy — to edit freely without pulling anyone else's changes:**
 
 ```bash
-cp -R ~/www/ai-stuff/skills/ai-image-set ~/.claude/skills/
+cp -R ~/www/ai-stuff/skills/<skill> ~/.claude/skills/
 ```
 
-Скилл появится в следующей сессии Claude Code. Проверить, что он подхватился, можно
-командой `/ai-image-set` — она вызывает скилл явно.
+A skill becomes available in the next Claude Code session. Some skills ship their own
+installer — see their README.
 
-## Скиллы в репозитории
+## Skills
 
 ### `ai-image-set`
 
-Генерация связного набора изображений для галереи, портфолио или каталога через
-бесплатный сервис без ключа и регистрации.
+Generates a coherent **set** of images — for a gallery, portfolio, catalogue or
+placeholder content — through a free service with no key and no account.
 
-Полезен тем, что содержит не только «как дёрнуть API», а накопленный опыт того, где
-это ломается:
+The generating is easy; the culling is the work. What the skill carries is the measured
+experience of where this breaks:
 
-- сервис допускает **только один одновременный запрос с одного IP**, а на второй
-  отвечает ошибкой, которая сохраняется под именем `.jpg` и проходит все наивные
-  проверки;
-- разрешение упирается в потолок 686×858 независимо от запрошенного;
-- доля брака в генерации — 30–40%, поэтому кандидатов нужно делать с запасом и
-  отсматривать глазами каждого;
-- таблица типичных дефектов: псевдотекст на этикетках, слипшиеся пальцы, сломанная
-  геометрия предметов, кадры, читающиеся как 3D-рендер;
-- формулировки промптов, которые эти дефекты предотвращают заранее.
+- the service allows **one concurrent request per IP**, and answers a second one with an
+  error that gets saved under your `.jpg` name and passes every naive check;
+- output is capped at 686×858 whatever size you ask for;
+- the defect rate is 30–40%, so candidates are generated with a surplus and **every one is
+  reviewed by eye**;
+- a table of the failures that actually recur: pseudo-text on labels, fused fingers,
+  broken object geometry, frames that read as a 3D render;
+- the prompt wording that prevents each of them in advance.
 
-**Принцип устройства:** механика живёт в скилле, стиль — в проекте. Скилл при запуске
-читает `.claude/image-style.md` в текущем проекте (палитра, категории, сюжеты,
-запреты), а если файла нет — задаёт вопросы и создаёт его. Так механика чинится
-один раз для всех проектов, а стиль не протекает между ними.
+**How it is built:** mechanics live in the skill, style lives in the project. On startup it
+reads `.claude/image-style.md` in the current project — palette, categories, subjects,
+prohibitions — and creates that file by asking questions if it is missing. So the mechanics
+are fixed once for every project, and style never leaks between them.
 
-## Соглашения
+### `web-audit`
 
-- `SKILL.md` пишется **на английском** — его читает модель, и на английском
-  инструкции исполняются точнее. Документация для людей может быть на любом языке.
-- Скилл не должен содержать ничего, специфичного для конкретного проекта. Всё
-  проектное выносится в файл, который скилл читает.
-- Вспомогательные скрипты кладутся в `scripts/` внутри папки скилла.
+Audits a running site by **looking at it**: screenshots at several viewports, reviewed as
+images, instead of reading CSS. Finds overlapping and clipped text, horizontal overflow,
+broken images, breakpoint failures, unreadable contrast, and states that only break after
+an interaction.
+
+Invoked manually with a parameter, so it runs exactly the lenses you asked for:
+
+```
+/web-audit mobile              everything mobile-relevant
+/web-audit view /pricing       layout only, one page
+/web-audit flows               menus, modals, focus rings
+```
+
+The value is in the safeguards, without which this kind of audit does harm or produces
+noise:
+
+- **your browser is never launched and never killed** — captures use a separate binary
+  with a throwaway profile, so your tabs and sessions stay untouched and never end up in a
+  screenshot;
+- **the address is an input, never a guess** — a wrong port means auditing someone else's
+  project, and a live host means real requests to real endpoints;
+- **no screenshot, no audit** — a conclusion about rendering is never drawn from source
+  code, however much faster that would be;
+- **no invented numbers** — contrast and sizes are measured and attributed, or described
+  in words;
+- **a finding needs a frame, a viewport and a visible element**, and "no defects found" is
+  a complete result.
+
+Full documentation: [`skills/web-audit/README.md`](skills/web-audit/README.md).
+
+## Licence
+
+[MIT](LICENSE) — use it, change it, ship it; keep the notice, expect no warranty.
