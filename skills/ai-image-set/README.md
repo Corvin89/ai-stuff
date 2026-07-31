@@ -8,12 +8,15 @@ and look at every candidate before it ships.
 
 ## Install
 
-No installer. Symlink or copy the folder:
+No installer. From the repository root, symlink or copy the folder:
 
 ```bash
-ln -s ~/www/ai-stuff/skills/ai-image-set ~/.claude/skills/ai-image-set   # updates with git pull
-cp -R ~/www/ai-stuff/skills/ai-image-set ~/.claude/skills/               # edit freely
+ln -s "$PWD/skills/ai-image-set" ~/.claude/skills/ai-image-set   # updates with git pull
+cp -R skills/ai-image-set ~/.claude/skills/                      # edit freely
 ```
+
+The symlink target has to be absolute — it is resolved relative to the link, not to the
+shell you typed it in.
 
 Available in the next Claude Code session. Nothing to install, no API key, no account.
 

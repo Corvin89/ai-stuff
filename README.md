@@ -8,19 +8,22 @@ where useful, a helper script alongside.
 
 ## Install
 
-Skills live in `~/.claude/skills/`. Two ways to get them there.
+Skills live in `~/.claude/skills/`. Clone this repository wherever you keep your
+checkouts, then, from its root, pick one of two ways.
 
 **Symlink — to receive updates with `git pull`:**
 
 ```bash
-git clone git@github.com:Corvin89/ai-stuff.git ~/www/ai-stuff
-ln -s ~/www/ai-stuff/skills/<skill> ~/.claude/skills/<skill>
+ln -s "$PWD/skills/<skill>" ~/.claude/skills/<skill>
 ```
+
+`$PWD` is not decoration: a symlink target is resolved relative to the link, not to the
+shell, so a relative path here produces a link that points at nothing.
 
 **Copy — to edit freely without pulling anyone else's changes:**
 
 ```bash
-cp -R ~/www/ai-stuff/skills/<skill> ~/.claude/skills/
+cp -R skills/<skill> ~/.claude/skills/
 ```
 
 A skill becomes available in the next Claude Code session. Some skills ship their own
