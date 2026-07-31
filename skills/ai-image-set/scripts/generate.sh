@@ -30,12 +30,12 @@ JOBS=${2:?jobs file required}
 TAIL=${3:-}
 
 MAX_RETRIES=4
-GAP=2 # пауза между запросами, чтобы не упереться в лимит очереди
+GAP=2 # pause between requests so we do not run into the queue limit
 
 mkdir -p "$OUT"
 
-# JPEG начинается с FF D8. Проверяем сигнатуру, а не размер: ответ 429
-# приходит как непустой JSON и по проверке "файл не пуст" проходит.
+# A JPEG starts with FF D8. Check the signature, not the size: a 429 reply
+# arrives as non-empty JSON and passes a "file is not empty" check.
 is_jpeg() {
   [ -s "$1" ] || return 1
   [ "$(head -c 2 "$1" | xxd -p 2>/dev/null)" = "ffd8" ]
@@ -76,14 +76,14 @@ while IFS=$'\t' read -r name seed prompt; do
     rm -f "$target"
 
     if [ "$attempt" -eq "$MAX_RETRIES" ]; then
-      echo "FAIL  $name  (http $code, попыток: $attempt)"
+      echo "FAIL  $name  (http $code, attempts: $attempt)"
       failed=$((failed + 1))
       break
     fi
 
-    # 429 = очередь занята. Отступаем всё дальше: 5, 10, 20, 40 секунд.
+    # 429 = the queue is busy. Back off further each time: 5, 10, 20, 40 seconds.
     backoff=$((5 * (1 << (attempt - 1))))
-    echo "retry $name  (http $code, ждём ${backoff}s)"
+    echo "retry $name  (http $code, waiting ${backoff}s)"
     sleep "$backoff"
     attempt=$((attempt + 1))
   done
@@ -93,6 +93,6 @@ done < "$JOBS"
 
 echo "---"
 echo "generated: $ok   skipped: $skipped   failed: $failed"
-echo "валидных JPEG в $OUT: $(find "$OUT" -type f -exec sh -c 'head -c2 "$1" | grep -q $"\xff\xd8"' _ {} \; -print 2>/dev/null | wc -l | tr -d ' ')"
-[ "$failed" -gt 0 ] && echo "перезапусти скрипт — он догенерирует только недостающие"
+echo "valid JPEGs in $OUT: $(find "$OUT" -type f -exec sh -c 'head -c2 "$1" | grep -q $"\xff\xd8"' _ {} \; -print 2>/dev/null | wc -l | tr -d ' ')"
+[ "$failed" -gt 0 ] && echo "rerun the script — it will generate only the missing ones"
 exit 0
