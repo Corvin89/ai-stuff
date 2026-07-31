@@ -131,8 +131,13 @@ the yield:
 
 - **Anything with a label → demand blankness.** `completely blank and unbranded, no
   text, no lettering, no label`. Do not ask for "a coffee bag with elegant branding".
-- **People → resolve the hands.** Either `hands out of frame` or `hands clearly
-  visible and relaxed`. Add `no jewellery` unless jewellery is the subject.
+- **People → make hands structurally absent, do not ask for it.** Writing `hands out
+  of frame` in the prompt is close to useless: in a measured run, 6 of 9 portraits
+  came back with fused or clawed fingers *despite* that instruction. What works is
+  choosing a composition where hands cannot appear — a tight crop, a back view, a
+  waist-up or shoulders-up frame, a garment macro. Compose the problem away instead
+  of asking the model to avoid it. Add `no jewellery` too unless jewellery is the
+  subject: rings, chains and earrings render as featureless blobs.
 - **People → demand a background.** `visible textured studio backdrop` or a named
   location, otherwise the model dissolves everything into black.
 - **Anti-CGI.** `real photograph not a render`, `natural key light`, `matte materials`.
