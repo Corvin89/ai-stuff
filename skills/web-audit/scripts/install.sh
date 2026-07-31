@@ -17,18 +17,19 @@ MODE=${1:-symlink}
 mkdir -p "$HOME/.claude/skills"
 
 if [ -e "$DEST" ] || [ -L "$DEST" ]; then
+  # Still report capabilities below: someone re-running this is usually asking
+  # "why does nothing get captured", and the answer is in that report.
   echo "already installed at $DEST"
-  echo "remove it first if you want to switch install mode:  rm -rf '$DEST'"
-  exit 1
-fi
-
-if [ "$MODE" = "--copy" ]; then
-  cp -R "$SRC" "$DEST"
-  echo "copied  $SRC  ->  $DEST"
-  echo "git pull will NOT update this copy."
+  echo "to switch install mode, remove it first:  rm -rf '$DEST'"
 else
-  ln -s "$SRC" "$DEST"
-  echo "linked  $DEST  ->  $SRC"
+  if [ "$MODE" = "--copy" ]; then
+    cp -R "$SRC" "$DEST"
+    echo "copied  $SRC  ->  $DEST"
+    echo "git pull will NOT update this copy."
+  else
+    ln -s "$SRC" "$DEST"
+    echo "linked  $DEST  ->  $SRC"
+  fi
 fi
 
 chmod +x "$SRC/scripts/"*.sh 2>/dev/null
