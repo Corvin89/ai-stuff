@@ -91,4 +91,8 @@ does not report them again.
 
 ## Licence
 
-[MIT](../../LICENSE) — copyright (c) 2026 Alexander Kutiy.
+[MIT](LICENSE) — copyright (c) 2026 Alexander Kutiy.
+
+The licence file sits in this folder, not only at the repository root, so it travels with
+the skill when you copy the folder out. MIT asks for the notice to be included in copies,
+and a link back to a repository is not an inclusion.

@@ -14,11 +14,17 @@ instructions are followed more precisely; the rest follows for consistency.
 ```
 skills/<name>/
   SKILL.md          required — frontmatter + the instructions themselves
+  LICENSE           required — a copy of the root licence, see below
   README.md         optional — for humans: what it does, install, usage
   lenses/           optional — bodies of knowledge read only when selected
   references/       optional — read on demand, not at activation
   scripts/          optional — helper scripts
 ```
+
+**Every skill folder carries its own `LICENSE`.** Skills are installed by copying or
+symlinking a single folder, so that folder is what reaches other people — and MIT asks for
+the notice to be included in copies, which a link back to this repository is not. Copy the
+root `LICENSE` verbatim into each new skill; do not edit or summarise it.
 
 ## The one rule that keeps skills reusable
 
