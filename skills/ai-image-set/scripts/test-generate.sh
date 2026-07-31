@@ -71,7 +71,7 @@ check "ASCII specials"    'vase%20%26%20bowl%20%232%2C%20blue' "$(urlencode 'vas
 # Regression: bash 3.2 returns a SIGNED char, so these came back as
 # %FFFFFFFFFFFFFFC3 and the service silently rendered a different subject.
 check "latin-1 accent"    'caf%C3%A9%20au%20lait'              "$(urlencode 'café au lait')"
-check "cyrillic"          '%D0%B2%D0%B0%D0%B7%D0%B0'           "$(urlencode 'ваза')"
+check "all-multibyte"     '%C3%B1%C3%BC%C3%A9'                 "$(urlencode 'ñüé')"
 check "em dash"           'a%20%E2%80%94%20b'                  "$(urlencode 'a — b')"
 # `?` truncates the query string, taking model= and seed= with it; `%` would
 # otherwise produce an invalid escape sequence.
@@ -81,7 +81,7 @@ check "unreserved intact" 'a-b_c.d~e'                          "$(urlencode 'a-b
 check "empty string"      ''                                   "$(urlencode '')"
 
 if command -v python3 >/dev/null 2>&1; then
-  for s in 'vase & bowl #2, blue' 'café au lait' 'ваза и чаша' 'a — b' 'what now? 50% off' 'a/b\c"d'"'"'e'; do
+  for s in 'vase & bowl #2, blue' 'café au lait' 'ñüé åäö' 'a — b' 'what now? 50% off' 'a/b\c"d'"'"'e'; do
     check "matches urllib.parse.quote: $s" \
       "$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$s")" \
       "$(urlencode "$s")"
