@@ -23,7 +23,8 @@
 # Run it with run_in_background: true — with model=flux a single image
 # takes 15–60s, so any sizeable batch outlives a synchronous tool call.
 #
-# Exit status: 0 if every job produced a valid JPEG, 1 if any job failed.
+# Exit status: 1 if any job exhausted its retries, 0 otherwise. A rerun is
+# the intended response — it regenerates only what is missing.
 
 set -u
 
@@ -50,13 +51,18 @@ is_jpeg() {
 # and commas is not enough.
 urlencode() {
   local LC_ALL=C
-  local string=$1 out='' char hex i
+  local string=$1 out='' char ord hex i
   for ((i = 0; i < ${#string}; i++)); do
     char=${string:i:1}
     case $char in
       [a-zA-Z0-9._~-]) out+=$char ;;
       *)
-        printf -v hex '%%%02X' "'$char"
+        # Mask to a byte: bash 3.2 (the /bin/bash on macOS) returns a SIGNED
+        # char from "'$char", so every byte above 0x7F renders as a 16-digit
+        # two's complement — "café" became caf%FFFFFFFFFFFFFFC3%FFFFFFFFFFFFFFA9.
+        # bash >= 4.4 casts to unsigned, so the bug is invisible on Linux.
+        printf -v ord '%d' "'$char"
+        printf -v hex '%%%02X' "$((ord & 0xFF))"
         out+=$hex
         ;;
     esac
@@ -68,7 +74,7 @@ ok=0
 skipped=0
 failed=0
 
-# `|| [ -n "$name" ]` keeps the last job when the file has no trailing
+# `|| [ -n "${name:-}" ]` keeps the last job when the file has no trailing
 # newline: read returns non-zero there but has already filled the fields,
 # and without this the final image is skipped with no error at all.
 while IFS=$'\t' read -r name seed prompt || [ -n "${name:-}" ]; do

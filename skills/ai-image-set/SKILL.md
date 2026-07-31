@@ -66,7 +66,10 @@ Consequences to respect:
 - Retry 429 with exponential backoff — the queue clears in seconds.
 
 `scripts/generate.sh` in this skill does all of the above. Prefer it over ad-hoc
-`curl` loops, which is exactly where this failure keeps coming from.
+`curl` loops, which is exactly where this failure keeps coming from. **It exits 1 when
+any job exhausted its retries** — that is not a broken run, it is the signal to run it
+again, which regenerates only what is missing. `scripts/test-generate.sh` covers it
+with a stubbed `curl`; run it after any change to the script.
 
 **Never run a large batch synchronously.** Thirty images at 30–60s each will blow
 past any tool timeout and you will lose the whole run. Instead:
@@ -82,8 +85,15 @@ past any tool timeout and you will lose the whole run. Instead:
 - On macOS the default shell is **zsh, which does not word-split unquoted variables**.
   `for pair in "1080 1350"; set -- $pair` silently gives you one argument, not two.
   Write scripts as `#!/bin/bash` and invoke them with `bash script.sh`.
-- URL-encode the prompt: spaces → `%20`, commas → `%2C`. A raw `sed 's/ /%20/g; s/,/%2C/g'`
-  is enough for ordinary prose prompts.
+- **Percent-encode the whole prompt, not just spaces and commas.** `sed 's/ /%20/g; s/,/%2C/g'`
+  looks sufficient and is not: `#` and `?` in a prompt truncate the URL, silently taking
+  `model=flux`, the size and the seed with them — you get an image back, from the default
+  model at a random seed, so the run is no longer reproducible. Use `urlencode` in
+  `scripts/generate.sh`; it encodes everything outside the RFC 3986 unreserved set.
+- **`printf "'$char"` returns a signed char in bash 3.2** — the `/bin/bash` on macOS. Every
+  byte above `0x7F` comes back as a 16-digit two's complement, so `café` encodes as
+  `caf%FFFFFFFFFFFFFFC3%FFFFFFFFFFFFFFA9`. bash ≥ 4.4 casts to unsigned, so this passes on
+  Linux and corrupts every accented or em-dashed prompt on macOS. Mask it: `$((ord & 0xFF))`.
 
 ## Generate a surplus, then cull
 
